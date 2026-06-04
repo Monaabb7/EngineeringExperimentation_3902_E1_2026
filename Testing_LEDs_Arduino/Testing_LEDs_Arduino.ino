@@ -1,17 +1,13 @@
 const int LED1_Pin=3;
-
 const int button1_Pin=2;
 
-
-
 int button1_state=0;
-
 
 void setup() {
 	// Initialize serial communication - allows printing to the console for debugging.
 	Serial.begin(9600);
 	pinMode(LED1_Pin, OUTPUT); // Set the LED anode pin as an output
-  pinMode(button1_Pin, INPUT); //Set the Button pin as an input
+   pinMode(button1_Pin, INPUT); //Set the Button pin as an input
 }
 
 
