@@ -1,6 +1,6 @@
-const int LED1_Pin=2;
+const int LED1_Pin=3;
 
-const int button1_Pin=3;
+const int button1_Pin=2;
 
 int button1_state=0;
 
