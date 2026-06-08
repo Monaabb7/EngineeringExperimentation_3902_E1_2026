@@ -97,7 +97,7 @@ void loop() {
 
   display.setCursor(0,0);
 
-  display.println("Ultrasonic +Servo");
+  display.println("Ultrasonic + Servo");
 
   display.setCursor(0,20);
   display.println("Distance: ");
