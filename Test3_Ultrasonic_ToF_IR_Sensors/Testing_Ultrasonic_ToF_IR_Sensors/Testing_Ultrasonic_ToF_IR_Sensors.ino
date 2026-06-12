@@ -2,141 +2,115 @@
 // Include Libraries
 #include "Arduino.h"
 #include "Wire.h"
-#include "SPI.h"
+#include "Adafruit_VL53L0X.h"
 #include "Adafruit_SSD1306.h"
 #include "Adafruit_GFX.h"
-#include "NewPing.h"
 
+//OLED Display Settings
 
-// Pin Definitions
-#define OLED128X64_PIN_RST	7
-#define OLED128X64_PIN_DC	6
-#define OLED128X64_PIN_CS	5
-#define HCSR04_PIN_TRIG	3
-#define HCSR04_PIN_ECHO	2
-#define IROBJAVOID_PIN_OUT	4
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
 
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_VL53L0X ToF;
 
+// Global variables and pin definitions
+// Define the pins for the HC-SR04 sensor
+const int trigPin2 = 3; // Pin that triggers the ultrasonic pulse
+const int echoPin2 = 4; // Pin that receives the echo signal
+
+//Define pin for IR sensor
+const int irPin = A0;
+
+// Variables to store the pulse duration and calculated distance
+float duration2, distance2;
+float distanceToF;
+float distanceIR;
 
 // Global variables and defines
 
-// object initialization
-#define SSD1306_LCDHEIGHT 64
-Adafruit_SSD1306 oLed128x64(OLED128X64_PIN_DC, OLED128X64_PIN_RST, OLED128X64_PIN_CS);
-NewPing hcsr04(HCSR04_PIN_TRIG,HCSR04_PIN_ECHO);
+void setup() {
+	// Initialize serial communication - allows printing to the console for debugging.
+	Serial.begin(115200);
+  // Setup function: runs once at startup
+  // Configure the trigger pin as an OUTPUT and the echo pin as an INPUT
+  pinMode(trigPin2, OUTPUT); // Set trigger pin as output
+  pinMode(echoPin2, INPUT);  // Set echo pin as input
 
+  //OLED Setup
 
-// define vars for testing menu
-const int timeout = 10000;       //define timeout of 10 sec
-char menuOption = 0;
-long time0;
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  {
+    Serial.println("SSD1306 Allocation failed");
+    while (true);
+  }
 
-// Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
-void setup() 
-{
-    // Setup Serial which is useful for debugging
-    // Use the Serial Monitor to view printed messages
-    Serial.begin(9600);
-    while (!Serial) ; // wait for serial port to connect. Needed for native USB
-    Serial.println("start");
-    
-    oLed128x64.begin(SSD1306_SWITCHCAPVCC);  // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-    oLed128x64.clearDisplay(); // Clear the buffer.
-    oLed128x64.display();
-    pinMode(IROBJAVOID_PIN_OUT, INPUT);
-    menuOption = menu();
-    
-}
+  // ToF Setup
 
-// Main logic of your circuit. It defines the interaction between the components you selected. After setup, it runs over and over again, in an eternal loop.
-void loop() 
-{
-    
-    
-    if(menuOption == '1')
-    {
-    // Disclaimer: The Adafruit VL53L0X Time of Flight Distance Sensor is in testing and/or doesn't have code, therefore it may be buggy. Please be kind and report any bugs you may find.
-    }
-    else if(menuOption == '2') {
-    // Monochrome 1.3 inch 128x64 OLED graphic display - Test Code
-    oLed128x64.setTextSize(1);
-    oLed128x64.setTextColor(WHITE);
-    oLed128x64.setCursor(0, 10);
-    oLed128x64.clearDisplay();
-    oLed128x64.println("Circuito.io Rocks!");
-    oLed128x64.display();
-    delay(1);
-    oLed128x64.startscrollright(0x00, 0x0F);
-    delay(2000);
-    oLed128x64.stopscroll();
-    delay(1000);
-    oLed128x64.startscrollleft(0x00, 0x0F);
-    delay(2000);
-    oLed128x64.stopscroll();
-    }
-    else if(menuOption == '3') {
-    // Ultrasonic Sensor - HC-SR04 - Test Code
-    // Read distance measurment from UltraSonic sensor           
-    int hcsr04Dist = hcsr04.ping_cm();
-    delay(10);
-    Serial.print(F("Distance: ")); Serial.print(hcsr04Dist); Serial.println(F("[cm]"));
+  if(!ToF.begin())
+  {
+    Serial.println("VL53L0X failed");
+    while (true);
+  }
 
-    }
-    else if(menuOption == '4') {
-    // IR Obstacle Avoidance sensor - Test Code
-    //Read IR obstacle Sensor. irObjAvoidVar will be '1' if an Obstacle was detected
-    //Use the onboard trimmer to set the distance of alert
-    bool irObjAvoidVar = !digitalRead(IROBJAVOID_PIN_OUT);
-    Serial.print(F("ObjAvoid: ")); Serial.println(irObjAvoidVar);
-
-    }
-    
-    if (millis() - time0 > timeout)
-    {
-        menuOption = menu();
-    }
-    
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.display();
 }
 
 
 
-// Menu function for selecting the components to be tested
-// Follow serial monitor for instrcutions
-char menu()
-{
+void loop() {
+  // Main loop: continuously measures distance
 
-    Serial.println(F("\nWhich component would you like to test?"));
-    Serial.println(F("(1) Adafruit VL53L0X Time of Flight Distance Sensor"));
-    Serial.println(F("(2) Monochrome 1.3 inch 128x64 OLED graphic display"));
-    Serial.println(F("(3) Ultrasonic Sensor - HC-SR04"));
-    Serial.println(F("(4) IR Obstacle Avoidance sensor"));
-    Serial.println(F("(menu) send anything else or press on board reset button\n"));
-    while (!Serial.available());
+  // Ensure the trigger pin is LOW to start
+  digitalWrite(trigPin2, LOW);
+  delayMicroseconds(2); // Short delay to allow sensor stabilization
 
-    // Read data from serial monitor if received
-    while (Serial.available()) 
-    {
-        char c = Serial.read();
-        if (isAlphaNumeric(c)) 
-        {   
-            
-            if(c == '1') 
-    			Serial.println(F("Now Testing Adafruit VL53L0X Time of Flight Distance Sensor - note that this component doesn't have a test code"));
-    		else if(c == '2') 
-    			Serial.println(F("Now Testing Monochrome 1.3 inch 128x64 OLED graphic display"));
-    		else if(c == '3') 
-    			Serial.println(F("Now Testing Ultrasonic Sensor - HC-SR04"));
-    		else if(c == '4') 
-    			Serial.println(F("Now Testing IR Obstacle Avoidance sensor"));
-            else
-            {
-                Serial.println(F("illegal input!"));
-                return 0;
-            }
-            time0 = millis();
-            return c;
-        }
-    }
+  // Trigger the sensor by sending a HIGH pulse for 10 microseconds
+  digitalWrite(trigPin2, HIGH);
+  delayMicroseconds(10); // Pulse duration
+  digitalWrite(trigPin2, LOW);
+
+  // Read the duration of the echo pulse (in microseconds)
+  duration2 = pulseIn(echoPin2, HIGH);
+
+  // Calculate the distance (cm) using the speed of sound (0.0343 cm/us)
+  // Dividing by 2 accounts for the round-trip distance
+  distance2 = (duration2 * 0.0343) / 2;
+
+  // Output the measured distance to the Serial Monitor
+  Serial.print("Distance: ");
+  Serial.println(distance2);
+
+  // Short delay before the next measurement
+  delay(100);  
+  
+
+  //Display on OLED
+
+  display.clearDisplay();
+  display.setTextSize(1);
+
+  display.setCursor(0,0);
+
+  display.println("Ultrasonic");
+
+  display.setCursor(0,20);
+  display.println("Distance: ");
+  display.print(distance2);
+
+  display.println(" cm");
+  
+  display.display();
+
+  delay(100);
+
 }
+
+
+ 
 
 
