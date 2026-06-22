@@ -68,10 +68,8 @@ void loop() {
    
    val2 = digitalRead(sensor2); //Read the sensor
 
-   Serial.println(val2);
-     Serial.print(",");
-
-
+   Serial.print(val2);
+     
     /* Get new sensor events with the readings */
   sensors_event_t a2, g2, temp2;
   mpu2.getEvent(&a2, &g2, &temp2);
