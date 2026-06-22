@@ -1,5 +1,4 @@
 #include <Stepper.h>
-
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
@@ -24,13 +23,22 @@
 
   Adafruit_MPU6050 mpu2;
 
+  //Using micros()
+  //10 rotations per minute/1 rotation in 6 seconds
+  //15 rotations per minute/1 rotation in 4 seconds
+  //4000ms/200 steps = 20ms per step
+
+  const long STEP_INTERVAL_MICROS=20000; //20 seconds
+
+
 void setup() {
   // put your setup code here, to run once:
 
   //Set the motor speed in rpm
   nema17Stepper.setSpeed(15);
 
-  Serial.begin (9600);
+  //Change baud rate, so other processes doesn't slow down movements and data collection
+  Serial.begin (115200);
 
   Serial.println("NEMA 17 is initialized with TB6612");
 
@@ -49,6 +57,9 @@ void setup() {
     }
   }
   Serial.println("MPU6050 Found!");
+
+  //IME Data Rate Change
+  mpu2.setFilterBandwidth(MPU6050_BAND_21_HZ); //refer to online resources for more information
 }
 
 void loop() {
@@ -57,17 +68,39 @@ void loop() {
   Serial.println("3 minute cycle starting");
 
   long startTime=millis();
-  Serial.print("Time, Hall Effect, RotX, TotY, Rotz");
+  Serial.print("Time(ms), Step_Count, Approx_Degree, Hall_Effect, RotX, TotY, Rotz");
+
+  int currentStepCount=0;
+  long lastStepTimeMicros = micros();
 
   while (millis()-startTime < duration)
   {
+    long currentMicros=micros();
+    if(currentMicros-lastStepTimeMicros >= STEP_INTERVAL_MICROS)
+    {
+      lastStepTimeMicros += STEP_INTERVAL_MICROS;
+       nema17Stepper.step(1);
+       currentStepCount++;
+
+       //Calculating angular position
+
+       float currentDegrees = currentStepCount * 1.8;
+       
+       if (currentStepCount >= StepsPerRevolution)
+       {
+        currentStepCount=0;
+       }
+    
   Serial.print(millis());
-   nema17Stepper.step(1);
 
    Serial.print(",");
-   
-   val2 = digitalRead(sensor2); //Read the sensor
+   //Print Step and Angle Data
+   Serial.print(currentStepCount);
+   Serial.print(",");
+   Serial.print(currentDegrees,1);
+   Serial.print(",");
 
+   val2 = digitalRead(sensor2); //Read the sensor
    Serial.print(val2);
      
     /* Get new sensor events with the readings */
@@ -79,9 +112,7 @@ void loop() {
   Serial.print(g2.gyro.y);
   Serial.print(",");
   Serial.println(g2.gyro.z);
-
+    }
   }
- 
-
- 
+  delay(5000);
 }
