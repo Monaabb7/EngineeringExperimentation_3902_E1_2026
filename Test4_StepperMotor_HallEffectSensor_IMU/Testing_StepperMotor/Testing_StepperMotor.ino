@@ -28,7 +28,7 @@
   //15 rotations per minute/1 rotation in 4 seconds
   //4000ms/200 steps = 20ms per step
 
-  const long STEP_INTERVAL_MICROS=20000; //20 seconds
+  const long STEP_INTERVAL_MICROS=20000; //20 ms
 
 
 void setup() {
