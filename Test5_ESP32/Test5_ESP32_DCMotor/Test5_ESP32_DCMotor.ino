@@ -1,6 +1,6 @@
 //Motor Driver PIn Definitions
 
-  const int enA=14;
+  const int enA = 14;
   const int in1 = 27;
   const int in2 = 26;
 
@@ -34,27 +34,29 @@
 
     if (Serial.available() >0) //checking if user has typed anything in the Serial Monitor
     {
-      String command = Serial.readStringUntil('\n');
+      // String command = Serial.readStringUntil('\n');
 
-      command.trim();
-      command.toUpperCase();
+      // command.trim();
+      // command.toUpperCase();
 
-      //clean up the string - not following the instructions
+      // //clean up the string - not following the instructions
 
-      Serial.print("Command Received: ");
-      Serial.println(command);
+      // Serial.print("Command Received: ");
+      // Serial.println(command);
 
-      //Motor Logic
+      // //Motor Logic
 
-      if (command=="START")
+      char command = Serial.read();
+
+      if (command=='1')
       {
         digitalWrite(in1,HIGH);
         digitalWrite(in2,LOW);
-        analogWrite(enA,200);
+        analogWrite(enA,20);
         Serial.println("Motor is Running");
       }
 
-      else if (command=="STOP")
+      else if (command=='0')
       {
         digitalWrite(in1,LOW);
         digitalWrite(in2,LOW);
@@ -62,9 +64,9 @@
         Serial.println("Motor is not Running");
       }
 
-      else
-      {
-        Serial.println("Unknown command typed");
-      }
+      // else
+      // {
+      //   Serial.println("Unknown command typed");
+      // }
     }
   }
