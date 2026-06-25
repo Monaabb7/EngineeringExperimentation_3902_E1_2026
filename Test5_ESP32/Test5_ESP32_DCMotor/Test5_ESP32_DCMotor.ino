@@ -1,8 +1,18 @@
-//Motor Driver PIn Definitions
+#include <WiFi.h>
+#include <WiFiUdp.h>
+//Wifi config
+
+  const char* ssid="ESP32_Control";
+  const int localPort = 5005;
+
+//Motor Driver Pin Definitions
 
   const int enA = 14;
   const int in1 = 27;
   const int in2 = 26;
+
+  WiFiUDP udp;
+  char packetBuffer[255];
 
   void setup()
   {
@@ -10,6 +20,27 @@
     Serial.begin(115200);
 
     delay(500);
+
+    // Configure Wi-Fi Access Point
+    WiFi.mode(WIFI_AP);
+    bool success = WiFi.softAP(ssid, NULL, 1);
+
+    if (success){
+      Serial.println("Access Point successfully started!");
+      Serial.print("SSID: ");
+      Serial.println(ssid);
+      Serial.print("AP IP Address: ");
+      Serial.println(WiFi.softAPIP()); //Should be 192.168.4.1
+    } 
+    else{
+      Serial.println("Failed to start Access Point");
+
+    } 
+    
+    //Start listening for UDP packets from MATLAB
+    udp.begin(localPort);
+    Serial.printf("Listening on UDP port %d\n", localPort);
+
 
     //Initialize Motor Driver Pins
 
@@ -32,7 +63,7 @@
   void loop()
   {
 
-    if (Serial.available() >0) //checking if user has typed anything in the Serial Monitor
+    //if (Serial.available() >0) //checking if user has typed anything in the Serial Monitor
     {
       // String command = Serial.readStringUntil('\n');
 
@@ -46,9 +77,23 @@
 
       // //Motor Logic
 
-      char command = Serial.read();
+      int packetSize = udp.parsePacket();
 
-      if (command=='1')
+      if (packetSize)
+      {
+        int len=udp.read(packetBuffer, 255);
+        if(len>0)
+        {
+          packetBuffer[len]=0;
+        }
+      }
+
+      String command = String(packetBuffer);
+      command.trim();
+
+      //char command = Serial.read();
+
+      if (command=="1")
       {
         digitalWrite(in1,HIGH);
         digitalWrite(in2,LOW);
@@ -56,7 +101,7 @@
         Serial.println("Motor is Running");
       }
 
-      else if (command=='0')
+      else if (command=="0")
       {
         digitalWrite(in1,LOW);
         digitalWrite(in2,LOW);
